@@ -12,7 +12,7 @@ node {
    }
    stage('sonarqube tests') {
      dir('basics') {
-       def app = docker.build("stephensflynn/sonar:${commit_id}", '-f sonarbuild' , '.')                             
+       def app = docker.build("stephensflynn/sonar:${commit_id}", 'echo Test' , '.')                             
      }
    }                                     
    stage('docker build/push') {      
