@@ -1,27 +1,34 @@
-FROM microsoft/aspnetcore-build as build-image
+FROM python:3.6 as builder
+# PYTHONUNBUFFERED Force logging to stdout / stderr not to be buffered into ram  
+ENV PYTHONUNBUFFERED=1 
+WORKDIR /usr/src/app
+COPY flask-api/ ./
+WORKDIR /wheels
+COPY flask-api/requirements.txt ./requirements.txt
+# PIP Will create an archive of our libraries so we don't need to download them again
+# argument - wheel
+RUN pip wheel -r ./requirements.txt 
 
-WORKDIR /home/app
 
-COPY ./*.sln ./
-COPY ./*/*.csproj ./
-RUN for file in $(ls *.csproj); do mkdir -p ./${file%.*}/ && mv $file ./${file%.*}/; done
+FROM eeacms/pylint:latest as linting
+WORKDIR /code
+COPY --from=builder /usr/src/app/pylint.cfg /etc/pylint.cfg
+COPY --from=builder /usr/src/app/*.py ./
+COPY --from=builder /usr/src/app/api ./api
+RUN ["/docker-entrypoint.sh", "pylint"]
 
-RUN dotnet restore
 
-COPY . .
+# Starts and Serves Web Page
+# Phase VI
+FROM python:3.6-slim as serve
+WORKDIR /usr/src/app
+# Copy all packages instead of rerunning pip install
+COPY --from=builder /wheels /wheels
+RUN     pip install -r /wheels/requirements.txt \
+                      -f /wheels \
+       && rm -rf /wheels \
+       && rm -rf /root/.cache/pip/* 
 
-RUN dotnet test --verbosity=normal --results-directory /TestResults/ --logger "trx;LogFileName=test_results.xml" ./Tests/Tests.csproj
-
-RUN dotnet publish ./AccountOwnerServer/AccountOwnerServer.csproj -o /publish/
-
-FROM microsoft/aspnetcore
-
-WORKDIR /publish
-
-COPY --from=build-image /publish .
-
-COPY --from=build-image /TestResults /TestResults
-
-ENV TEAMCITY_PROJECT_NAME = ${TEAMCITY_PROJECT_NAME}
-
-ENTRYPOINT ["dotnet", "AccountOwnerServer.dll"]
+COPY --from=builder /usr/src/app/*.py ./
+COPY --from=builder /usr/src/app/api ./api
+CMD ["python", "run_app.py"]
