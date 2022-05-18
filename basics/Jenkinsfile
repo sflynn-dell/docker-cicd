@@ -5,17 +5,19 @@ node {
      sh "git rev-parse --short HEAD > .git/commit-id"
      commit_id = readFile('.git/commit-id').trim()
    }
-   stage('dockerbuild') {
-     dir('basics') {
-       def app = docker.build("stephensflynn/basics:${commit_id}", '.')
+   parallel {
+     stage('dockerbuild') {
+       dir('basics') {
+         def app = docker.build("stephensflynn/basics:${commit_id}", '.')
+       }
+     }
+     stage('sonarqube tests') {
+       dir('basics') {
+         // def app = docker.build("stephensflynn/sonar:${commit_id}", 'echo Test' , '.')                             
+          println "Run Sonar tests."
+       }
      }
    }
-   stage('sonarqube tests') {
-     dir('basics') {
-       // def app = docker.build("stephensflynn/sonar:${commit_id}", 'echo Test' , '.')                             
-        println "Run Sonar tests."
-     }
-   }                                     
    stage('docker build/push') {      
      dir('basics') {
        //docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
