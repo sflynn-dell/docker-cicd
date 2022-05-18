@@ -1,5 +1,6 @@
 node {
    def commit_id
+   stages {
    stage('Preparation') {
      checkout scm
      sh "git rev-parse --short HEAD > .git/commit-id"
@@ -27,5 +28,6 @@ node {
        //}
         println "Push image."
      }
-   }     
+   }
+   }
 }
