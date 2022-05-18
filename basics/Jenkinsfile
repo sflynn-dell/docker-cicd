@@ -5,7 +5,8 @@ node {
      sh "git rev-parse --short HEAD > .git/commit-id"
      commit_id = readFile('.git/commit-id').trim()
    }
-   parallel ('Build And Test'){
+   stage ('Build And Test') {
+      parallel {
      stage('dockerbuild') {
        dir('basics') {
          def app = docker.build("stephensflynn/basics:${commit_id}", '.')
@@ -17,6 +18,7 @@ node {
           println "Run Sonar tests."
        }
      }
+      }
    }
    stage('docker build/push') {      
      dir('basics') {
