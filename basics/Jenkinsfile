@@ -1,5 +1,8 @@
-node {
-   def commit_id
+pipeline {
+   agent any
+   environment {
+     def commit_id
+   }
    stages {
    stage('Preparation') {
      checkout scm
