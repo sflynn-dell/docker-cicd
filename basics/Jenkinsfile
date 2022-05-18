@@ -5,7 +5,7 @@ node {
      sh "git rev-parse --short HEAD > .git/commit-id"
      commit_id = readFile('.git/commit-id').trim()
    }
-   parallel {
+   parallel ('Build And Test'){
      stage('dockerbuild') {
        dir('basics') {
          def app = docker.build("stephensflynn/basics:${commit_id}", '.')
